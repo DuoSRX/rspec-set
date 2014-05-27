@@ -18,7 +18,14 @@ module RSpec
         def set(variable_name, &block)
           before(:all) do
             # Create model
-            self.class.send(:class_variable_set, "@@__rspec_set_#{variable_name}".to_sym, instance_eval(&block))
+            model = instance_eval(&block)
+
+            # Save the original attributes for a non-saved model
+            if model.respond_to?(:new_record?) && model.new_record?
+              self.class.send(:class_variable_set, "@@__rspec_set_#{variable_name}_attributes".to_sym, model.attributes)
+            end
+
+            self.class.send(:class_variable_set, "@@__rspec_set_#{variable_name}".to_sym, model)
           end
 
           before(:each) do
@@ -28,7 +35,10 @@ module RSpec
               if model.destroyed?
                 # Reset destroyed model
                 self.class.send(:class_variable_set, "@@__rspec_set_#{variable_name}".to_sym, model.class.find(model.id))
-              elsif !model.new_record?
+              elsif model.new_record?
+                # Restore the changes on a non-saved model
+                model.attributes = self.class.send(:class_variable_get, "@@__rspec_set_#{variable_name}_attributes".to_sym)
+              else
                 # Reload saved model
                 model.reload
               end

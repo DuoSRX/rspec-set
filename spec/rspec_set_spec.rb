@@ -64,6 +64,20 @@ describe 'with a stale model' do
   end
 end
 
+describe 'with a non-saved model' do
+  set(:my_non_saved_object) do
+    ActiveRecordClassExample.new(name: 'Bob')
+  end
+
+  it 'allows me to change the model' do
+    my_non_saved_object.name = 'John'
+    expect(my_non_saved_object.changed).to eq(["name"])
+  end
+
+  it 'rollback the changes' do
+    expect(my_non_saved_object.name).to eq('Bob')
+  end
+end
 
 describe ActiveRecordClassExample do
   set(:ar_class_example) { ActiveRecordClassExample.create(name: 'ex_1') }
